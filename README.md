@@ -1,8 +1,11 @@
-# Trade Pulse Tracker - Phase 1: Foundation Setup
+# Trade Pulse Tracker - Phases 1 & 2: Foundation + Monitoring
 
 ## Overview
 
-This is Phase 1 of the Trade Pulse Tracker implementation. This phase establishes the container environment and basic project structure with all infrastructure services.
+This project implements a production-grade event-driven data pipeline for financial price data with a critical focus on **minimizing and monitoring latency** in trading systems.
+
+**Phase 1 ✅**: Foundation Setup - Infrastructure services (Kafka, PostgreSQL, InfluxDB, Grafana)
+**Phase 2 ✅**: Monitoring Service - Standalone HTTP endpoint monitoring with latency tracking
 
 ## Project Structure
 

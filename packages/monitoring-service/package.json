@@ -1,0 +1,33 @@
+{
+  "name": "monitoring-service",
+  "version": "1.0.0",
+  "description": "Standalone HTTP endpoint monitoring service with latency tracking",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "monitoring",
+    "latency",
+    "influxdb",
+    "detachable",
+    "middleware"
+  ],
+  "author": "Trade Pulse Tracker",
+  "license": "MIT",
+  "dependencies": {
+    "@influxdata/influxdb-client": "^1.33.2",
+    "axios": "^1.6.0",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "@types/node-cron": "^3.0.8",
+    "typescript": "^5.2.2",
+    "ts-node": "^10.9.1"
+  }
+}

@@ -1,5 +1,7 @@
 # Project Implementation Plan for Real-Time Price-Feed Ingestor + Latency-Monitoring Dashboard
 
+# AFTER COMPLETION OF EACH PHASE CHECK IF THE PROJECT IS WORKING OR NOT AND GENERATE A NEW FILE IN A PHASES FOLDER NAMED WITH THE PHASE NAME( EX: PHASE1.MD). IT SHOULD CONTAIN ALL THE THINGS YOU DID IN THIS PHASE AND ALSO HOW YOU DID IT AND IF YOU NEED TO EXPLAIN ME SOME SOME CODE DO THAT ALSO, CAUSE I CAN LEARN AND EXPLAIN TO THE INTERVIWER IF ANY ONE ASKS ME HOW SOMETHING IS BUILT IN THE PROJECT
+
 ## 1. Project Purpose & Why It's Being Made
 
 This project creates a production-grade event-driven data pipeline for financial price data with a critical focus on **minimizing and monitoring latency** in trading systems. The core problem it solves is the **lag in trading ticks aggregation** that can lead to:

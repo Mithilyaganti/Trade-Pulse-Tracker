@@ -1,17 +1,16 @@
 apiVersion: 1
 
 datasources:
-  - name: InfluxDB
-    uid: InfluxDB-TradePulse
+  - name: InfluxDB-Monitoring
     type: influxdb
     access: proxy
     url: http://influxdb:8086
     jsonData:
       version: Flux
-      organization: tradepulse
+      organization: monitoring
       defaultBucket: metrics
       tlsSkipVerify: true
     secureJsonData:
-      token: tradepulse-super-secret-auth-token
+      token: monitoring-super-secret-auth-token
     isDefault: true
     editable: true

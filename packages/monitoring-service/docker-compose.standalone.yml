@@ -1,0 +1,114 @@
+# Standalone Docker Compose for Monitoring Service
+# This file allows the monitoring service to be extracted and used
+# in any project without dependencies on the main Trade Pulse Tracker setup.
+
+version: '3.8'
+
+services:
+  # InfluxDB - Time-series database for metrics
+  influxdb:
+    image: influxdb:2.7-alpine
+    hostname: influxdb
+    container_name: monitoring-influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: adminpassword
+      DOCKER_INFLUXDB_INIT_ORG: monitoring
+      DOCKER_INFLUXDB_INIT_BUCKET: metrics
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: monitoring-super-secret-auth-token
+    volumes:
+      - monitoring_influxdb_data:/var/lib/influxdb2
+      - monitoring_influxdb_config:/etc/influxdb2
+    networks:
+      - monitoring-network
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Grafana - Visualization dashboard
+  grafana:
+    image: grafana/grafana:10.0.0
+    hostname: grafana
+    container_name: monitoring-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      # Auto-provision InfluxDB datasource
+      GF_INSTALL_PLUGINS: ""
+    volumes:
+      - monitoring_grafana_data:/var/lib/grafana
+      - ./grafana-standalone:/etc/grafana/provisioning
+    networks:
+      - monitoring-network
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Monitoring Service
+  monitoring-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    hostname: monitoring-service
+    container_name: monitoring-service
+    environment:
+      # InfluxDB Configuration
+      INFLUX_URL: http://influxdb:8086
+      INFLUX_TOKEN: monitoring-super-secret-auth-token
+      INFLUX_ORG: monitoring
+      INFLUX_BUCKET: metrics
+      
+      # Monitoring Configuration
+      PROBE_INTERVAL: "*/30 * * * * *"  # Every 30 seconds
+      
+      # IMPORTANT: Configure your targets here
+      # Format: comma-separated URLs
+      # Example: TARGETS=http://app1:8080/health,http://app2:9090/metrics,http://api:3000/status
+      TARGETS: "http://httpbin.org/delay/1,http://httpbin.org/status/200,http://httpbin.org/status/500"
+    networks:
+      - monitoring-network
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Example target service for testing
+  # Remove this in production and set your own targets in TARGETS environment variable
+  httpbin:
+    image: kennethreitz/httpbin
+    hostname: httpbin
+    container_name: monitoring-httpbin
+    ports:
+      - "80:80"
+    networks:
+      - monitoring-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/status/200"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  monitoring-network:
+    driver: bridge
+    name: monitoring-network
+
+volumes:
+  monitoring_influxdb_data:
+    name: monitoring-influxdb-data
+  monitoring_influxdb_config:
+    name: monitoring-influxdb-config
+  monitoring_grafana_data:
+    name: monitoring-grafana-data

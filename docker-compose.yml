@@ -121,6 +121,39 @@ services:
       timeout: 10s
       retries: 3
 
+  # Monitoring Service - Phase 2: Standalone HTTP endpoint monitor
+  monitoring-service:
+    build:
+      context: ./packages/monitoring-service
+      dockerfile: Dockerfile
+      network: host
+    hostname: monitoring-service
+    container_name: monitoring-service
+    environment:
+      # InfluxDB Configuration
+      INFLUX_URL: http://influxdb:8086
+      INFLUX_TOKEN: tradepulse-super-secret-auth-token
+      INFLUX_ORG: tradepulse
+      INFLUX_BUCKET: metrics
+      
+      # Monitoring Configuration
+      PROBE_INTERVAL: "*/30 * * * * *"  # Every 30 seconds
+      
+      # Configure targets to monitor (will be updated as services are added)
+      # For now, monitor external services for demonstration
+      TARGETS: "http://httpbin.org/delay/1,http://httpbin.org/status/200,https://api.github.com/zen"
+    networks:
+      - trade-pulse-network
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "console.log('Monitoring service health check')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 networks:
   trade-pulse-network:
     driver: bridge
