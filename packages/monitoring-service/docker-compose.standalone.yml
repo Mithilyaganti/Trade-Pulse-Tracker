@@ -2,7 +2,7 @@
 # This file allows the monitoring service to be extracted and used
 # in any project without dependencies on the main Trade Pulse Tracker setup.
 
-version: '3.8'
+version: "3.8"
 
 services:
   # InfluxDB - Time-series database for metrics
@@ -69,10 +69,10 @@ services:
       INFLUX_TOKEN: monitoring-super-secret-auth-token
       INFLUX_ORG: monitoring
       INFLUX_BUCKET: metrics
-      
+
       # Monitoring Configuration
-      PROBE_INTERVAL: "*/30 * * * * *"  # Every 30 seconds
-      
+      PROBE_INTERVAL: "*/30 * * * * *" # Every 30 seconds
+
       # IMPORTANT: Configure your targets here
       # Format: comma-separated URLs
       # Example: TARGETS=http://app1:8080/health,http://app2:9090/metrics,http://api:3000/status

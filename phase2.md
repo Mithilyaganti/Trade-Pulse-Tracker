@@ -7,6 +7,7 @@ Phase 2 of the Trade Pulse Tracker project focused on building a **standalone, d
 ## 🎯 Project Goals Achieved
 
 ### Primary Goals
+
 1. **High-Precision Latency Measurement**: Implemented using `process.hrtime.bigint()` for nanosecond-level accuracy
 2. **Standalone Architecture**: Service can operate independently with its own infrastructure
 3. **Environment-Driven Configuration**: No code changes needed for different deployments
@@ -15,6 +16,7 @@ Phase 2 of the Trade Pulse Tracker project focused on building a **standalone, d
 6. **Detachability**: Complete extraction capability with `docker-compose.standalone.yml`
 
 ### Design Principles
+
 - **Middleware Pattern**: Clean interfaces that work with any project
 - **Error Resilience**: Graceful handling of network failures and timeouts
 - **Concurrent Processing**: Simultaneous probing of multiple endpoints
@@ -56,6 +58,7 @@ Monitoring Service Architecture:
 ## 📁 File Structure and Purpose
 
 ### Project Directory Structure
+
 ```
 packages/monitoring-service/
 ├── src/
@@ -80,30 +83,33 @@ This is the orchestrator that coordinates all monitoring activities:
 #### Key Components:
 
 **Configuration Management**:
+
 ```typescript
 interface MonitoringConfig {
-  influxUrl: string;        // InfluxDB connection URL
-  influxToken: string;      // Authentication token
-  influxOrg: string;        // InfluxDB organization
-  influxBucket: string;     // Target data bucket
-  targets: string;          // Comma-separated URLs to monitor
-  probeInterval: string;    // Cron expression for probe frequency
+	influxUrl: string; // InfluxDB connection URL
+	influxToken: string; // Authentication token
+	influxOrg: string; // InfluxDB organization
+	influxBucket: string; // Target data bucket
+	targets: string; // Comma-separated URLs to monitor
+	probeInterval: string; // Cron expression for probe frequency
 }
 ```
 
 **Environment Variable Loading**:
+
 ```typescript
 this.config = {
-  influxUrl: process.env.INFLUX_URL || 'http://localhost:8086',
-  influxToken: process.env.INFLUX_TOKEN || 'tradepulse-super-secret-auth-token',
-  influxOrg: process.env.INFLUX_ORG || 'tradepulse',
-  influxBucket: process.env.INFLUX_BUCKET || 'metrics',
-  targets: process.env.TARGETS || '',
-  probeInterval: process.env.PROBE_INTERVAL || '*/30 * * * * *' // Every 30 seconds
+	influxUrl: process.env.INFLUX_URL || "http://localhost:8086",
+	influxToken: process.env.INFLUX_TOKEN || "tradepulse-super-secret-auth-token",
+	influxOrg: process.env.INFLUX_ORG || "tradepulse",
+	influxBucket: process.env.INFLUX_BUCKET || "metrics",
+	targets: process.env.TARGETS || "",
+	probeInterval: process.env.PROBE_INTERVAL || "*/30 * * * * *", // Every 30 seconds
 };
 ```
 
 **Why This Approach?**
+
 - **Environment-Driven**: No code changes needed for different deployments
 - **Sensible Defaults**: Works out-of-the-box with Trade Pulse Tracker infrastructure
 - **Flexible Configuration**: Easy to adapt to any project's requirements
@@ -111,14 +117,16 @@ this.config = {
 #### Initialization Sequence:
 
 1. **InfluxDB Connection Test**:
+
    ```typescript
    const connected = await this.influxWriter.testConnection();
    if (!connected) {
-     throw new Error('Failed to connect to InfluxDB');
+   	throw new Error("Failed to connect to InfluxDB");
    }
    ```
 
 2. **Target Configuration**:
+
    ```typescript
    this.probeManager.addTargetsFromString(this.config.targets);
    ```
@@ -126,20 +134,22 @@ this.config = {
 3. **Cron Job Scheduling**:
    ```typescript
    this.cronJob = cron.schedule(this.config.probeInterval, async () => {
-     await this.probeManager.probeAndRecord();
+   	await this.probeManager.probeAndRecord();
    });
    ```
 
 #### Graceful Shutdown Implementation:
+
 ```typescript
-process.on('SIGINT', async () => {
-  console.log('\n📡 Received SIGINT, shutting down gracefully...');
-  await service.stop();
-  process.exit(0);
+process.on("SIGINT", async () => {
+	console.log("\n📡 Received SIGINT, shutting down gracefully...");
+	await service.stop();
+	process.exit(0);
 });
 ```
 
 **Why Graceful Shutdown Matters**:
+
 - Ensures pending InfluxDB writes are flushed
 - Prevents data loss during container restarts
 - Allows proper cleanup of resources
@@ -154,7 +164,7 @@ This component handles the core HTTP probing functionality:
 ```typescript
 async probeTarget(target: ProbeTarget): Promise<ProbeResult> {
   const startTime = process.hrtime.bigint();  // Nanosecond precision start
-  
+
   try {
     const response = await axios.get(target.url, {
       timeout: target.timeout || 5000,
@@ -163,7 +173,7 @@ async probeTarget(target: ProbeTarget): Promise<ProbeResult> {
 
     const endTime = process.hrtime.bigint();
     const latency = Number(endTime - startTime) / 1_000_000; // Convert to milliseconds
-    
+
     return {
       target: target.name || target.url,
       latency,
@@ -174,7 +184,7 @@ async probeTarget(target: ProbeTarget): Promise<ProbeResult> {
     // Even failures are timed for diagnostic purposes
     const endTime = process.hrtime.bigint();
     const latency = Number(endTime - startTime) / 1_000_000;
-    
+
     return {
       target: target.name || target.url,
       latency,
@@ -197,7 +207,7 @@ async probeTarget(target: ProbeTarget): Promise<ProbeResult> {
 async probeAllTargets(): Promise<ProbeResult[]> {
   const probePromises = this.targets.map(target => this.probeTarget(target));
   const results = await Promise.allSettled(probePromises);
-  
+
   return results.map((result, index) => {
     if (result.status === 'fulfilled') {
       return result.value;
@@ -214,6 +224,7 @@ async probeAllTargets(): Promise<ProbeResult[]> {
 ```
 
 **Why Promise.allSettled()?**
+
 - **Non-Blocking**: One failed probe doesn't stop others
 - **Complete Results**: Gets results from all probes, even if some fail
 - **Performance**: All probes run simultaneously, not sequentially
@@ -234,6 +245,7 @@ addTargetsFromString(targetsString: string): void {
 ```
 
 **Configuration Examples**:
+
 ```bash
 # Single target
 TARGETS="http://api-service:8080/health"
@@ -273,12 +285,14 @@ writeLatencyMetric(
 ```
 
 **InfluxDB Data Model Explanation**:
+
 - **Measurement**: `http_probe` (like a table name)
 - **Tags**: `target`, `success`, `status_code` (indexed, used for filtering)
 - **Fields**: `latency_ms` (stored values, used for calculations)
 - **Timestamp**: Automatic timestamping for time-series functionality
 
 **Why This Structure?**
+
 - **Query Performance**: Tags are indexed, making filtering fast
 - **Aggregation Ready**: Fields can be averaged, summed, etc.
 - **Grafana Compatible**: Structure works seamlessly with Grafana queries
@@ -299,6 +313,7 @@ async testConnection(): Promise<boolean> {
 ```
 
 **Connection Test Strategy**:
+
 - **Minimal Query**: Tests connection with lightweight query
 - **Non-Intrusive**: Doesn't create data, just reads
 - **Fast Failure**: Quick detection of connection issues
@@ -310,13 +325,14 @@ async testConnection(): Promise<boolean> {
 constructor(url: string, token: string, org: string, bucket: string) {
   this.influxDB = new InfluxDB({ url, token });
   this.writeApi = this.influxDB.getWriteApi(org, bucket);
-  
+
   // Configure batch settings for better performance
   this.writeApi.useDefaultTags({ service: 'monitoring-service' });
 }
 ```
 
 **Performance Optimization**:
+
 - **Batched Writes**: InfluxDB client automatically batches writes for efficiency
 - **Default Tags**: `service: 'monitoring-service'` added to all metrics
 - **Connection Reuse**: Single connection for all writes, reducing overhead
@@ -358,6 +374,7 @@ CMD ["npm", "start"]
 ```
 
 **Security and Performance Features**:
+
 - **Alpine Linux**: Smaller image size, reduced attack surface
 - **Layer Caching**: `package*.json` copied first to leverage Docker cache
 - **Non-Root User**: Follows security best practices
@@ -423,6 +440,7 @@ services:
 ```
 
 **Detachability Features**:
+
 - **Self-Contained**: Includes all required infrastructure
 - **Different Naming**: Avoids conflicts with main project
 - **Example Targets**: HTTPBin service for immediate testing
@@ -436,6 +454,7 @@ services:
 The verification script performs 7 categories of checks:
 
 1. **Infrastructure Services Check**:
+
    ```bash
    check_container() {
      local container_name=$1
@@ -448,6 +467,7 @@ The verification script performs 7 categories of checks:
    ```
 
 2. **Health Status Verification**:
+
    ```bash
    check_health() {
      local container_name=$1
@@ -461,6 +481,7 @@ The verification script performs 7 categories of checks:
    ```
 
 3. **Service Functionality Tests**:
+
    ```bash
    # Check if monitoring service is probing targets
    if docker logs monitoring-service 2>&1 | grep -q "Probing.*targets"; then
@@ -479,6 +500,7 @@ The verification script performs 7 categories of checks:
    ```
 
 **Why Comprehensive Verification?**
+
 - **End-to-End Testing**: Verifies complete data flow
 - **Real-Time Validation**: Tests actual metric collection
 - **Troubleshooting Aid**: Identifies specific failure points
@@ -521,6 +543,7 @@ Timestamp: 2025-01-26T10:30:00Z
 ```
 
 ### Sample InfluxDB Query:
+
 ```flux
 from(bucket:"metrics")
   |> range(start: -1h)
@@ -534,19 +557,20 @@ from(bucket:"metrics")
 
 ### Core Configuration Options:
 
-| Variable | Default | Purpose | Example |
-|----------|---------|---------|---------|
-| `INFLUX_URL` | `http://localhost:8086` | InfluxDB connection | `http://influxdb:8086` |
-| `INFLUX_TOKEN` | `tradepulse-super-secret-auth-token` | Authentication | Your InfluxDB token |
-| `INFLUX_ORG` | `tradepulse` | InfluxDB organization | `monitoring` |
-| `INFLUX_BUCKET` | `metrics` | Target bucket | `app-metrics` |
-| `TARGETS` | `""` | Endpoints to monitor | `http://api:8080,http://web:3000` |
-| `PROBE_INTERVAL` | `*/30 * * * * *` | Cron expression | `*/10 * * * * *` (every 10s) |
+| Variable         | Default                              | Purpose               | Example                           |
+| ---------------- | ------------------------------------ | --------------------- | --------------------------------- |
+| `INFLUX_URL`     | `http://localhost:8086`              | InfluxDB connection   | `http://influxdb:8086`            |
+| `INFLUX_TOKEN`   | `tradepulse-super-secret-auth-token` | Authentication        | Your InfluxDB token               |
+| `INFLUX_ORG`     | `tradepulse`                         | InfluxDB organization | `monitoring`                      |
+| `INFLUX_BUCKET`  | `metrics`                            | Target bucket         | `app-metrics`                     |
+| `TARGETS`        | `""`                                 | Endpoints to monitor  | `http://api:8080,http://web:3000` |
+| `PROBE_INTERVAL` | `*/30 * * * * *`                     | Cron expression       | `*/10 * * * * *` (every 10s)      |
 
 ### Cron Expression Examples:
+
 ```bash
 */30 * * * * *   # Every 30 seconds
-*/10 * * * * *   # Every 10 seconds  
+*/10 * * * * *   # Every 10 seconds
 0 */5 * * * *    # Every 5 minutes
 0 0 */1 * * *    # Every hour
 ```
@@ -592,13 +616,13 @@ spec:
         app: monitoring-service
     spec:
       containers:
-      - name: monitoring-service
-        image: monitoring-service:latest
-        env:
-        - name: INFLUX_URL
-          value: "http://influxdb-service:8086"
-        - name: TARGETS
-          value: "http://api-service:8080/health,http://web-service:3000"
+        - name: monitoring-service
+          image: monitoring-service:latest
+          env:
+            - name: INFLUX_URL
+              value: "http://influxdb-service:8086"
+            - name: TARGETS
+              value: "http://api-service:8080/health,http://web-service:3000"
 ```
 
 ## 🎯 Key Learning Points for Interviews
@@ -606,22 +630,26 @@ spec:
 ### Technical Competencies Demonstrated:
 
 1. **Microservices Architecture**:
+
    - Loose coupling through environment variables
    - Single responsibility principle (monitoring only)
    - Container-first design
 
 2. **High-Performance Programming**:
+
    - Nanosecond precision timing with `process.hrtime.bigint()`
    - Concurrent HTTP requests with `Promise.allSettled()`
    - Efficient batch writing to InfluxDB
 
 3. **Production-Ready Code**:
+
    - Graceful shutdown handling
    - Comprehensive error handling
    - Health checks and monitoring
    - Security best practices (non-root user)
 
 4. **DevOps and Containerization**:
+
    - Multi-stage Docker builds
    - Docker layer caching optimization
    - Container health checks

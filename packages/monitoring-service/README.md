@@ -58,14 +58,14 @@ docker run -d \\
 
 All configuration is done through environment variables:
 
-| Variable | Description | Default | Example |
-|----------|-------------|---------|---------|
-| `INFLUX_URL` | InfluxDB connection URL | `http://localhost:8086` | `http://influxdb:8086` |
-| `INFLUX_TOKEN` | InfluxDB authentication token | `tradepulse-super-secret-auth-token` | `your-secret-token` |
-| `INFLUX_ORG` | InfluxDB organization | `tradepulse` | `mycompany` |
-| `INFLUX_BUCKET` | InfluxDB bucket for metrics | `metrics` | `monitoring` |
-| `TARGETS` | Comma-separated list of URLs to monitor | `""` | `http://api:8080,http://web:3000/health` |
-| `PROBE_INTERVAL` | Cron expression for probe frequency | `*/30 * * * * *` | `*/15 * * * * *` |
+| Variable         | Description                             | Default                              | Example                                  |
+| ---------------- | --------------------------------------- | ------------------------------------ | ---------------------------------------- |
+| `INFLUX_URL`     | InfluxDB connection URL                 | `http://localhost:8086`              | `http://influxdb:8086`                   |
+| `INFLUX_TOKEN`   | InfluxDB authentication token           | `tradepulse-super-secret-auth-token` | `your-secret-token`                      |
+| `INFLUX_ORG`     | InfluxDB organization                   | `tradepulse`                         | `mycompany`                              |
+| `INFLUX_BUCKET`  | InfluxDB bucket for metrics             | `metrics`                            | `monitoring`                             |
+| `TARGETS`        | Comma-separated list of URLs to monitor | `""`                                 | `http://api:8080,http://web:3000/health` |
+| `PROBE_INTERVAL` | Cron expression for probe frequency     | `*/30 * * * * *`                     | `*/15 * * * * *`                         |
 
 ### Target Configuration Examples
 
@@ -99,16 +99,16 @@ The service writes the following metrics to InfluxDB:
 
 ### `http_probe` Measurement
 
-| Field | Type | Description |
-|-------|------|-------------|
+| Field        | Type  | Description                     |
+| ------------ | ----- | ------------------------------- |
 | `latency_ms` | float | Round-trip time in milliseconds |
 
-| Tag | Description | Values |
-|-----|-------------|--------|
-| `target` | The endpoint being monitored | URL or custom name |
-| `success` | Whether the probe succeeded | `true`, `false` |
-| `status_code` | HTTP response status code | `200`, `404`, `500`, etc. |
-| `service` | Service identifier | `monitoring-service` |
+| Tag           | Description                  | Values                    |
+| ------------- | ---------------------------- | ------------------------- |
+| `target`      | The endpoint being monitored | URL or custom name        |
+| `success`     | Whether the probe succeeded  | `true`, `false`           |
+| `status_code` | HTTP response status code    | `200`, `404`, `500`, etc. |
+| `service`     | Service identifier           | `monitoring-service`      |
 
 ### Example InfluxDB Query
 
@@ -268,7 +268,7 @@ docker exec monitoring-service nslookup target-host
 
 ```yaml
 # docker-compose.prod.yml
-version: '3.8'
+version: "3.8"
 services:
   monitoring-service:
     image: monitoring-service:latest
@@ -282,10 +282,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 256M
         reservations:
-          cpus: '0.1'
+          cpus: "0.1"
           memory: 128M
     restart: unless-stopped
     healthcheck:
@@ -313,25 +313,25 @@ spec:
         app: monitoring-service
     spec:
       containers:
-      - name: monitoring-service
-        image: monitoring-service:latest
-        env:
-        - name: INFLUX_URL
-          value: "http://influxdb:8086"
-        - name: INFLUX_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: influx-secret
-              key: token
-        - name: TARGETS
-          value: "http://api:8080/health,http://frontend:3000/health"
-        resources:
-          limits:
-            cpu: 500m
-            memory: 256Mi
-          requests:
-            cpu: 100m
-            memory: 128Mi
+        - name: monitoring-service
+          image: monitoring-service:latest
+          env:
+            - name: INFLUX_URL
+              value: "http://influxdb:8086"
+            - name: INFLUX_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: influx-secret
+                  key: token
+            - name: TARGETS
+              value: "http://api:8080/health,http://frontend:3000/health"
+          resources:
+            limits:
+              cpu: 500m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
 ```
 
 ## 🤝 Integration Examples
@@ -340,8 +340,8 @@ spec:
 
 ```javascript
 // Add health endpoint to your Express app
-app.get('/health', (req, res) => {
-  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+app.get("/health", (req, res) => {
+	res.json({ status: "healthy", timestamp: new Date().toISOString() });
 });
 
 // Configure monitoring
@@ -353,7 +353,9 @@ app.get('/health', (req, res) => {
 ```javascript
 // pages/api/health.js
 export default function handler(req, res) {
-  res.status(200).json({ status: 'healthy', version: process.env.npm_package_version });
+	res
+		.status(200)
+		.json({ status: "healthy", version: process.env.npm_package_version });
 }
 
 // Configure monitoring

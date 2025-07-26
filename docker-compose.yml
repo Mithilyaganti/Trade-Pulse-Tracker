@@ -135,10 +135,10 @@ services:
       INFLUX_TOKEN: tradepulse-super-secret-auth-token
       INFLUX_ORG: tradepulse
       INFLUX_BUCKET: metrics
-      
+
       # Monitoring Configuration
-      PROBE_INTERVAL: "*/30 * * * * *"  # Every 30 seconds
-      
+      PROBE_INTERVAL: "*/30 * * * * *" # Every 30 seconds
+
       # Configure targets to monitor (will be updated as services are added)
       # For now, monitor external services for demonstration
       TARGETS: "http://httpbin.org/delay/1,http://httpbin.org/status/200,https://api.github.com/zen"
@@ -149,7 +149,8 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "node", "-e", "console.log('Monitoring service health check')"]
+      test:
+        ["CMD", "node", "-e", "console.log('Monitoring service health check')"]
       interval: 30s
       timeout: 10s
       retries: 3
