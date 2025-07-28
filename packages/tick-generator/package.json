@@ -1,0 +1,38 @@
+{
+  "name": "tick-generator",
+  "version": "1.0.0",
+  "description": "Financial price tick generator with CSV replay and Binance WebSocket relay capabilities",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist",
+    "csv": "npm run dev -- --source=csv --file=./data/sample.csv",
+    "binance": "npm run dev -- --source=binance --symbols=BTCUSDT,ETHUSDT",
+    "help": "npm run dev -- --help"
+  },
+  "keywords": [
+    "trading",
+    "tick-data",
+    "binance",
+    "csv-replay",
+    "market-data",
+    "financial"
+  ],
+  "author": "Trade Pulse Tracker",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "commander": "^11.1.0",
+    "csv-parser": "^3.0.0",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "@types/ws": "^8.5.8",
+    "typescript": "^5.2.2",
+    "ts-node": "^10.9.1"
+  }
+}

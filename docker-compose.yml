@@ -155,6 +155,30 @@ services:
       timeout: 10s
       retries: 3
 
+  # Tick Generator - Phase 3: Financial price tick generator
+  tick-generator:
+    build:
+      context: ./packages/tick-generator
+      dockerfile: Dockerfile
+      network: host
+    hostname: tick-generator
+    container_name: tick-generator
+    networks:
+      - trade-pulse-network
+    volumes:
+      # Mount additional CSV data files if needed
+      - ./packages/tick-generator/data:/app/data
+    restart: "no" # Don't auto-restart, let it complete its task
+    profiles:
+      - tick-generator # Optional profile to start only when needed
+    # Default configuration - can be overridden via docker-compose override
+    command: >
+      sh -c "echo 'Tick Generator is ready. Use docker-compose run commands to start specific data sources:' &&
+             echo '  CSV Replay: docker-compose run --rm tick-generator node dist/index.js --source=csv --file=/app/data/AAPL.csv' &&
+             echo '  Binance Relay: docker-compose run --rm tick-generator node dist/index.js --source=binance --symbols=BTCUSDT,ETHUSDT' &&
+             echo 'Sleeping for manual activation...' &&
+             sleep infinity"
+
 networks:
   trade-pulse-network:
     driver: bridge
