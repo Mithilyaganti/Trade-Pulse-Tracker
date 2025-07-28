@@ -139,9 +139,8 @@ services:
       # Monitoring Configuration
       PROBE_INTERVAL: "*/30 * * * * *" # Every 30 seconds
 
-      # Configure targets to monitor (will be updated as services are added)
-      # For now, monitor external services for demonstration
-      TARGETS: "http://httpbin.org/delay/1,http://httpbin.org/status/200,https://api.github.com/zen"
+      # Configure targets to monitor - now includes ingestor service
+      TARGETS: "http://ingestor:9090/metrics,http://httpbin.org/delay/1,http://httpbin.org/status/200"
     networks:
       - trade-pulse-network
     depends_on:
@@ -174,10 +173,65 @@ services:
     # Default configuration - can be overridden via docker-compose override
     command: >
       sh -c "echo 'Tick Generator is ready. Use docker-compose run commands to start specific data sources:' &&
-             echo '  CSV Replay: docker-compose run --rm tick-generator node dist/index.js --source=csv --file=/app/data/AAPL.csv' &&
-             echo '  Binance Relay: docker-compose run --rm tick-generator node dist/index.js --source=binance --symbols=BTCUSDT,ETHUSDT' &&
+             echo '  CSV Replay: docker-compose run --rm tick-generator node dist/index.js --source=csv --file=/app/data/AAPL.csv --host=ingestor --port=8080' &&
+             echo '  Binance Relay: docker-compose run --rm tick-generator node dist/index.js --source=binance --symbols=BTCUSDT,ETHUSDT --host=ingestor --port=8080' &&
              echo 'Sleeping for manual activation...' &&
              sleep infinity"
+
+  # Ingestor Service - Phase 4: TCP price tick ingestor with Kafka publishing
+  ingestor:
+    build:
+      context: ./packages/ingestor
+      dockerfile: Dockerfile
+      network: host
+    hostname: ingestor
+    container_name: ingestor
+    ports:
+      - "8080:8080" # TCP server for receiving price ticks
+      - "9090:9090" # Prometheus metrics endpoint
+    environment:
+      # TCP Server Configuration
+      TCP_HOST: "0.0.0.0"
+      TCP_PORT: "8080"
+      TCP_MAX_CONNECTIONS: "100"
+      TCP_KEEP_ALIVE: "true"
+      TCP_KEEP_ALIVE_DELAY: "30000"
+
+      # Kafka Configuration
+      KAFKA_BROKERS: "kafka:29092"
+      KAFKA_TOPIC: "price-ticks"
+      KAFKA_CLIENT_ID: "trade-pulse-ingestor"
+      KAFKA_ACKS: "1"
+      KAFKA_RETRIES: "3"
+      KAFKA_COMPRESSION: "gzip"
+      KAFKA_BATCH_SIZE: "16384"
+      KAFKA_LINGER_MS: "10"
+
+      # Metrics Configuration
+      METRICS_ENABLED: "true"
+      METRICS_PORT: "9090"
+      METRICS_PATH: "/metrics"
+
+      # Validation Configuration
+      VALIDATION_STRICT_MODE: "false"
+      VALIDATION_MAX_PRICE_DEVIATION: "0.1" # 10%
+      VALIDATION_MAX_TIMESTAMP_AGE: "300000" # 5 minutes
+    networks:
+      - trade-pulse-network
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "const http = require(''http''); const options = { host: ''localhost'', port: 9090, path: ''/metrics'', timeout: 5000 }; const req = http.request(options, (res) => { if (res.statusCode === 200) { console.log(''Health check: OK''); process.exit(0); } else { console.log(''Health check: Failed''); process.exit(1); } }); req.on(''error'', () => { console.log(''Health check: Error''); process.exit(1); }); req.end();" || exit 1',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 networks:
   trade-pulse-network:
