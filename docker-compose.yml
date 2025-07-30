@@ -139,8 +139,8 @@ services:
       # Monitoring Configuration
       PROBE_INTERVAL: "*/30 * * * * *" # Every 30 seconds
 
-      # Configure targets to monitor - now includes ingestor service
-      TARGETS: "http://ingestor:9090/metrics,http://httpbin.org/delay/1,http://httpbin.org/status/200"
+      # Configure targets to monitor - now includes ingestor and snapshot services
+      TARGETS: "http://ingestor:9090/metrics,http://snapshot-service:9091/metrics,http://httpbin.org/delay/1,http://httpbin.org/status/200"
     networks:
       - trade-pulse-network
     depends_on:
@@ -232,6 +232,74 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  # Snapshot Service - Phase 5: Maintains current price state and serves clients
+  snapshot-service:
+    build:
+      context: ./packages/snapshot-service
+      dockerfile: Dockerfile
+      network: host
+    hostname: snapshot-service
+    container_name: snapshot-service
+    ports:
+      - "3001:3001" # REST API
+      - "3002:3002" # WebSocket server
+      - "9091:9091" # Prometheus metrics
+    environment:
+      # Kafka Configuration
+      KAFKA_BROKERS: "kafka:29092"
+      KAFKA_TOPIC: "price-ticks"
+      KAFKA_GROUP_ID: "snapshot-service-group"
+      KAFKA_CLIENT_ID: "trade-pulse-snapshot-service"
+
+      # PostgreSQL Configuration
+      POSTGRES_HOST: "postgres"
+      POSTGRES_PORT: "5432"
+      POSTGRES_DATABASE: "tradepulse"
+      POSTGRES_USER: "tradepulse"
+      POSTGRES_PASSWORD: "tradepulse123"
+      POSTGRES_MAX_CONNECTIONS: "20"
+
+      # REST API Configuration
+      REST_API_PORT: "3001"
+      REST_API_HOST: "0.0.0.0"
+
+      # WebSocket Configuration
+      WEBSOCKET_PORT: "3002"
+      WEBSOCKET_HOST: "0.0.0.0"
+
+      # Metrics Configuration
+      METRICS_ENABLED: "true"
+      METRICS_PORT: "9091"
+      METRICS_PATH: "/metrics"
+
+      # Performance Configuration
+      BATCH_SIZE: "50"
+      FLUSH_INTERVAL: "1000" # 1 second
+      MAX_RETRIES: "3"
+
+      # Development mode for detailed logging
+      NODE_ENV: "development"
+    networks:
+      - trade-pulse-network
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      ingestor:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "const http = require(''http''); const options = { host: ''localhost'', port: 9091, path: ''/health'', timeout: 5000 }; const req = http.request(options, (res) => { if (res.statusCode === 200) { console.log(''Health check: OK''); process.exit(0); } else { console.log(''Health check: Failed''); process.exit(1); } }); req.on(''error'', () => { console.log(''Health check: Error''); process.exit(1); }); req.end();" || exit 1',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 networks:
   trade-pulse-network:
